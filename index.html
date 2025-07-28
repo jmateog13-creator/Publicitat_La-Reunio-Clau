@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Reunió Clau</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            min-height: 600px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .client-option {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 25px;
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+        .client-option:hover { background: #667eea; color: white; }
+        #decision-counter {
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        #status-bars {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 40px;
+            justify-content: center;
+        }
+        .status-bar { flex: 1; max-width: 300px; }
+        .status-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .progress-container {
+            background: #e0e0e0;
+            border-radius: 25px;
+            height: 20px;
+            overflow: hidden;
+        }
+        #satisfaction-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #81C784);
+            width: 50%;
+            transition: width 0.8s ease-in-out;
+            border-radius: 25px;
+        }
+        #integrity-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #2196F3, #64B5F6);
+            width: 50%;
+            transition: width 0.8s ease-in-out;
+            border-radius: 25px;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+            color: #666;
+        }
+        #dialogue-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        #client-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            color: #333;
+            font-style: italic;
+        }
+        .client-name {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: block;
+        }
+        #player-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .option-button {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            text-align: left;
+        }
+        .option-button:hover:not(:disabled) {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+        .option-button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .option-type {
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+        #feedback-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        #feedback-message.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(10px);
+        }
+        #feedback-message.positive { background: #4CAF50; }
+        #feedback-message.warning { background: #ff9800; }
+        #feedback-message.negative { background: #f44336; }
+        #game-end {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 20px;
+            color: white;
+        }
+        #restart-btn {
+            background: white;
+            color: #333;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>La Reunió Clau</h1>
+        
+        <div id="client-selector">
+            <h3 style="text-align: center; margin-bottom: 20px;">Escull el teu client:</h3>
+            <div style="text-align: center;">
+                <div class="client-option" onclick="startGame('modern')">
+                    <h4>🚀 Startup Tecnològica</h4>
+                    <p>Jove, innovador, vol música moderna</p>
+                </div>
+                <div class="client-option" onclick="startGame('traditional')">
+                    <h4>🏛️ Empresa Tradicional</h4>
+                    <p>Conservadora, valora la tradició</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="decision-counter" style="display: none;">
+            Decisió <span id="current-decision">1</span> de 5
+        </div>
+        
+        <div id="status-bars" style="display: none;">
+            <div class="status-bar">
+                <div class="status-label">Satisfacció del Client</div>
+                <div class="progress-container">
+                    <div id="satisfaction-progress"></div>
+                </div>
+                <div class="progress-text" id="satisfaction-text">50%</div>
+            </div>
+            <div class="status-bar">
+                <div class="status-label">Integritat Creativa</div>
+                <div class="progress-container">
+                    <div id="integrity-progress"></div>
+                </div>
+                <div class="progress-text" id="integrity-text">50%</div>
+            </div>
+        </div>
+
+        <div id="dialogue-section" style="display: none;">
+            <span class="client-name">Client:</span>
+            <p id="client-text"></p>
+        </div>
+
+        <div id="player-options" style="display: none;"></div>
+
+        <div id="game-end">
+            <h2>Reunió Finalitzada!</h2>
+            <div id="final-score"></div>
+            <p id="final-message"></p>
+            <button id="restart-btn" onclick="restartGame()">Tornar a Jugar</button>
+        </div>
+
+        <div id="feedback-message"></div>
+    </div>
+
+    <script>
+        let gameState = {
+            satisfaction: 50,
+            integrity: 50,
+            currentStep: 0,
+            decisionCount: 1,
+            clientType: null
+        };
+
+        const DIALOGUES = {
+            modern: {
+                0: {
+                    text: "He escoltat la proposta de jingle i no m'agrada gens. Sona massa antic i no reflecteix la imatge moderna que volem projectar.",
+                    options: [
+                        {
+                            text: "Entenc la seva preocupació. Vam escollir aquest estil retro per connectar amb la tradició de la marca, creant contrast amb la innovació.",
+                            type: "(Argumentada)",
+                            satisfactionChange: 10,
+                            integrityChange: 15,
+                            nextStep: 1,
+                            feedback: "💬 Argumentació professional!"
+                        },
+                        {
+                            text: "Té raó, ho canviem immediatament. Què li agradaria escoltar? Podem fer-ho com vostè digui.",
+                            type: "(Servil)",
+                            satisfactionChange: 15,
+                            integrityChange: -20,
+                            nextStep: 2,
+                            feedback: "⚠️ Massa complaent..."
+                        },
+                        {
+                            text: "Respectuosament, crec que és l'opció correcta. Les dades demostren que aquest estil genera més recordació de marca.",
+                            type: "(Defensiva)",
+                            satisfactionChange: -10,
+                            integrityChange: 10,
+                            nextStep: 1,
+                            feedback: "🛡️ Defenses la posició amb dades"
+                        }
+                    ]
+                },
+                1: {
+                    text: "Entenc el raonament, però els nostres clients són joves. Necessitem alguna cosa més enèrgica i actual.",
+                    options: [
+                        {
+                            text: "Perfecte! Podem mantenir l'essència però amb ritme dinàmic. Incorporem elements electrònics mantenint la melodia principal.",
+                            type: "(Propositiva)",
+                            satisfactionChange: 20,
+                            integrityChange: 10,
+                            nextStep: 3,
+                            feedback: "✨ Excel·lent compromís!"
+                        }
+                    ]
+                },
+                2: {
+                    text: "Vull alguna cosa moderna, amb ritme, que enganxi immediatament però sense ser estrident. I amb personalitat pròpia.",
+                    options: [
+                        {
+                            text: "Entesos. Crearem diverses versions per comparar i escollir la millor opció segons les seves necessitats.",
+                            type: "(Estratègica)",
+                            satisfactionChange: 15,
+                            integrityChange: 5,
+                            nextStep: 3,
+                            feedback: "🎯 Estratègia intel·ligent!"
+                        }
+                    ]
+                },
+                3: {
+                    text: "D'acord! Però acabo de rebre un missatge del CEO. Vol escoltar personalment totes les propostes abans d'aprovar res.",
+                    options: [
+                        {
+                            text: "Cap problema! Podem adaptar la presentació perquè sigui més executiva. Coneix les preferències del CEO?",
+                            type: "(Adaptativa)",
+                            satisfactionChange: 20,
+                            integrityChange: 5,
+                            nextStep: 4,
+                            feedback: "🎯 Gestió excel·lent!"
+                        },
+                        {
+                            text: "Oh... això complica les coses. Hauríem de saber això des del principi. Com preparar sense conèixer els seus gustos?",
+                            type: "(Frustrada)",
+                            satisfactionChange: -15,
+                            integrityChange: 0,
+                            nextStep: 4,
+                            feedback: "😤 La frustració es nota massa..."
+                        },
+                        {
+                            text: "Perfecte! Això és una oportunitat. Si impressionem directament al CEO, el projecte tindrà molt més suport intern.",
+                            type: "(Oportunista)",
+                            satisfactionChange: 10,
+                            integrityChange: 10,
+                            nextStep: 4,
+                            feedback: "🎯 Veus l'oportunitat en el repte!"
+                        }
+                    ]
+                },
+                4: {
+                    text: "Una darrera cosa: necessitem que estigui llest per dimarts. Són només 4 dies de treball. És possible?",
+                    options: [
+                        {
+                            text: "És ajustat però factible. Organitzarem l'equip en paral·lel: composició, gravació i postproducció. Dilluns ho tindran.",
+                            type: "(Eficient)",
+                            satisfactionChange: 25,
+                            integrityChange: 15,
+                            nextStep: 'end_excellent',
+                            feedback: "🚀 Gestió exemplar!"
+                        },
+                        {
+                            text: "Quatre dies és poc per fer-ho amb qualitat. Podem tenir un esbós, però necessitem una setmana més.",
+                            type: "(Realista)",
+                            satisfactionChange: -10,
+                            integrityChange: 20,
+                            nextStep: 'end_good',
+                            feedback: "⏰ Prioritzes la qualitat!"
+                        },
+                        {
+                            text: "Clar que sí! Treballarem dia i nit si cal. Dimarts ho tindran perfecte, sense dubte.",
+                            type: "(Irrealista)",
+                            satisfactionChange: 20,
+                            integrityChange: -25,
+                            nextStep: 'end_acceptable',
+                            feedback: "😅 Prometre l'impossible és perillós"
+                        }
+                    ]
+                }
+            },
+            traditional: {
+                0: {
+                    text: "He revisat la proposta i m'ha semblat massa moderna. La nostra empresa té 150 anys. Necessitem serietat i tradició.",
+                    options: [
+                        {
+                            text: "Entenc perfectament. Podem crear una peça que honori la història: instruments clàssics, harmonia elegant, producció contemporània.",
+                            type: "(Respectuosa)",
+                            satisfactionChange: 20,
+                            integrityChange: 10,
+                            nextStep: 1,
+                            feedback: "🎩 Excel·lent respecte!"
+                        },
+                        {
+                            text: "Podríem fer una versió més conservadora. Potser piano clàssic i més sobria en general.",
+                            type: "(Insegura)",
+                            satisfactionChange: 10,
+                            integrityChange: -10,
+                            nextStep: 2,
+                            feedback: "🤔 Més convicció..."
+                        },
+                        {
+                            text: "La música moderna pot connectar amb noves generacions mantenint l'essència de qualitat. No cal ser antiquat per ser respectable.",
+                            type: "(Desafiant)",
+                            satisfactionChange: -15,
+                            integrityChange: 15,
+                            nextStep: 2,
+                            feedback: "⚡ Valent, però potser massa directe"
+                        }
+                    ]
+                },
+                1: {
+                    text: "Sona millor. Però estem perdent clients joves. Necessitem equilibrar tradició amb relevància actual.",
+                    options: [
+                        {
+                            text: "Proposo 'tradició elegant': base orquestral clàssica amb arrangaments contemporanis subtils. Distingit però accessible.",
+                            type: "(Equilibrada)",
+                            satisfactionChange: 25,
+                            integrityChange: 20,
+                            nextStep: 3,
+                            feedback: "⚖️ Equilibri perfecte!"
+                        }
+                    ]
+                },
+                2: {
+                    text: "Necessito més concreció. Quins elements exactament? No vull sorpreses que ofenguin els clients tradicionals.",
+                    options: [
+                        {
+                            text: "Elements subtils: reverb modern, masterització contemporània, toc de sintetitzador discret. Res estrident.",
+                            type: "(Detallada)",
+                            satisfactionChange: 20,
+                            integrityChange: 15,
+                            nextStep: 3,
+                            feedback: "📝 Concreció tranquil·litzadora!"
+                        },
+                        {
+                            text: "Bé... podríem provar diferents coses i veure què funciona millor. Cal ser flexibles.",
+                            type: "(Vaga)",
+                            satisfactionChange: 5,
+                            integrityChange: -15,
+                            nextStep: 3,
+                            feedback: "🤷 Massa imprecisió genera dubtes"
+                        }
+                    ]
+                },
+                3: {
+                    text: "El nostre competidor ha anunciat una campanya amb Beethoven modernitzat. Com ens diferenciem sense perdre classe?",
+                    options: [
+                        {
+                            text: "Mentre ells van per l'òbviu, nosaltres serem subtilment elegants. Proposo Bach: matemàticament perfecte, atemporalment sofisticat.",
+                            type: "(Estratègica)",
+                            satisfactionChange: 30,
+                            integrityChange: 25,
+                            nextStep: 4,
+                            feedback: "🧠 Estratègia brillant!"
+                        },
+                        {
+                            text: "Podem fer alguna cosa similar però millor. Si ells han triat Beethoven, nosaltres podem anar amb Mozart.",
+                            type: "(Imitativa)",
+                            satisfactionChange: 10,
+                            integrityChange: -10,
+                            nextStep: 4,
+                            feedback: "📄 Seguir la competència no diferencia"
+                        },
+                        {
+                            text: "No ens preocupem per la competència. Farem el que sigui millor per la vostra marca, independentment del que facin altres.",
+                            type: "(Independent)",
+                            satisfactionChange: 15,
+                            integrityChange: 20,
+                            nextStep: 4,
+                            feedback: "💪 Confiança en la pròpia visió"
+                        }
+                    ]
+                },
+                4: {
+                    text: "El consell d'administració vol revisar personalment qualsevol decisió de màrqueting. Com ho gestionem?",
+                    options: [
+                        {
+                            text: "Prepararem una presentació executiva amb exemples sonors, explicació del concepte i anàlisi de beneficis per la marca.",
+                            type: "(Professional)",
+                            satisfactionChange: 30,
+                            integrityChange: 20,
+                            nextStep: 'end_excellent',
+                            feedback: "🎖️ Gestió exemplar!"
+                        },
+                        {
+                            text: "Adaptarem la proposta perquè sigui més conservadora. Així el consell se sentirà més còmode.",
+                            type: "(Conservadora)",
+                            satisfactionChange: 15,
+                            integrityChange: -5,
+                            nextStep: 'end_good',
+                            feedback: "🛡️ Segur però limitat"
+                        },
+                        {
+                            text: "Oh... això complica molt les coses. No sabia que hi havia tantes persones involucrades en la decisió.",
+                            type: "(Desorientada)",
+                            satisfactionChange: -15,
+                            integrityChange: 5,
+                            nextStep: 'end_acceptable',
+                            feedback: "😕 La complexitat et supera una mica"
+                        }
+                    ]
+                }
+            }
+        };
+
+        function startGame(clientType) {
+            gameState.clientType = clientType;
+            gameState.satisfaction = 50;
+            gameState.integrity = 50;
+            gameState.currentStep = 0;
+            gameState.decisionCount = 1;
+            
+            document.getElementById('client-selector').style.display = 'none';
+            document.getElementById('status-bars').style.display = 'flex';
+            document.getElementById('dialogue-section').style.display = 'block';
+            document.getElementById('player-options').style.display = 'flex';
+            document.getElementById('decision-counter').style.display = 'block';
+            
+            updateProgressBars();
+            updateDecisionCounter();
+            loadDialogue(0);
+        }
+
+        function loadDialogue(step) {
+            const dialogue = DIALOGUES[gameState.clientType][step];
+            if (!dialogue) {
+                endGame('end');
+                return;
+            }
+
+            document.getElementById('client-text').textContent = dialogue.text;
+            const playerOptions = document.getElementById('player-options');
+            playerOptions.innerHTML = '';
+            
+            dialogue.options.forEach((option) => {
+                const button = document.createElement('button');
+                button.className = 'option-button';
+                button.innerHTML = `<span class="option-type">${option.type}</span>${option.text}`;
+                button.addEventListener('click', () => handleOptionClick(option));
+                playerOptions.appendChild(button);
+            });
+        }
+
+        function handleOptionClick(option) {
+            const buttons = document.querySelectorAll('.option-button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            if (option.feedback) {
+                showFeedback(option.feedback, getFeedbackType(option));
+            }
+            
+            gameState.satisfaction += option.satisfactionChange;
+            gameState.integrity += option.integrityChange;
+            gameState.satisfaction = Math.max(0, Math.min(100, gameState.satisfaction));
+            gameState.integrity = Math.max(0, Math.min(100, gameState.integrity));
+            
+            updateProgressBars();
+            gameState.decisionCount++;
+            updateDecisionCounter();
+            
+            setTimeout(() => {
+                if (typeof option.nextStep === 'string' && option.nextStep.startsWith('end')) {
+                    endGame(option.nextStep);
+                } else {
+                    gameState.currentStep = option.nextStep;
+                    loadDialogue(option.nextStep);
+                }
+            }, 1000);
+        }
+
+        function showFeedback(message, type = 'positive') {
+            const feedbackElement = document.getElementById('feedback-message');
+            feedbackElement.textContent = message;
+            feedbackElement.className = `show ${type}`;
+            setTimeout(() => { feedbackElement.className = ''; }, 2500);
+        }
+
+        function getFeedbackType(option) {
+            const total = option.satisfactionChange + option.integrityChange;
+            if (total > 15) return 'positive';
+            if (total < -10) return 'negative';
+            return 'warning';
+        }
+
+        function updateProgressBars() {
+            document.getElementById('satisfaction-progress').style.width = `${gameState.satisfaction}%`;
+            document.getElementById('integrity-progress').style.width = `${gameState.integrity}%`;
+            document.getElementById('satisfaction-text').textContent = `${gameState.satisfaction}%`;
+            document.getElementById('integrity-text').textContent = `${gameState.integrity}%`;
+        }
+
+        function updateDecisionCounter() {
+            document.getElementById('current-decision').textContent = gameState.decisionCount;
+        }
+
+        function endGame(endType) {
+            document.getElementById('dialogue-section').style.display = 'none';
+            document.getElementById('player-options').style.display = 'none';
+            document.getElementById('decision-counter').style.display = 'none';
+            
+            const finalScore = Math.round((gameState.satisfaction + gameState.integrity) / 2);
+            let title = "Reunió Finalitzada!";
+            let message = "";
+            
+            switch(endType) {
+                case 'end_excellent':
+                    title = "🌟 Reunió Excel·lent!";
+                    message = "Excepcional! Has demostrat equilibri perfecte entre professionalitat i creativitat.";
+                    break;
+                case 'end_good':
+                    title = "✅ Reunió Exitosa!";
+                    message = "Molt bé! Has gestionat la reunió amb habilitat, trobant bones solucions.";
+                    break;
+                case 'end_acceptable':
+                    title = "⚖️ Reunió Acceptable";
+                    message = "La reunió ha tingut reptes, però has trobat una solució viable. Hi ha marge de millora.";
+                    break;
+                default:
+                    if (finalScore >= 70) {
+                        title = "🎯 Bona Reunió!";
+                        message = "Has mantingut una relació professional equilibrada.";
+                    } else {
+                        message = "La reunió ha estat complicada. Cal trobar millor equilibri entre client i integritat.";
+                    }
+            }
+            
+            document.querySelector('#game-end h2').textContent = title;
+            document.getElementById('final-score').innerHTML = `
+                <strong>Puntuació Final: ${finalScore}/100</strong><br>
+                Satisfacció: ${gameState.satisfaction}% | Integritat: ${gameState.integrity}%
+            `;
+            document.getElementById('final-message').textContent = message;
+            document.getElementById('game-end').style.display = 'block';
+        }
+
+        function restartGame() {
+            gameState = { satisfaction: 50, integrity: 50, currentStep: 0, decisionCount: 1, clientType: null };
+            document.getElementById('game-end').style.display = 'none';
+            document.getElementById('client-selector').style.display = 'block';
+            document.getElementById('status-bars').style.display = 'none';
+            document.getElementById('dialogue-section').style.display = 'none';
+            document.getElementById('player-options').style.display = 'none';
+            document.getElementById('decision-counter').style.display = 'none';
+            document.getElementById('feedback-message').className = '';
+        }
+    </script>
+</body>
+</html>
